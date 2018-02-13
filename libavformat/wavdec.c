@@ -610,6 +610,17 @@ static int64_t find_guid(AVIOContext *pb, const uint8_t guid1[16])
 
 static int wav_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
+    static int printed = 0;
+    
+    printed != 1 ? printf("\n*** CS 3505: Executing in wav_read_packet in wavdec.c *** \n*** CS 3505: Modified by JoCee Porter & Jacob Bullard ***\n"), printed = 1 : NULL;
+
+
+  // if(printed != 1)
+  // {
+        
+        //printed = 1;
+	//}
+
     int ret, size;
     int64_t left;
     AVStream *st;

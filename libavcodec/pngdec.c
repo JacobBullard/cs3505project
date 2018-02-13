@@ -37,6 +37,7 @@
 
 #include <zlib.h>
 
+
 enum PNGHeaderState {
     PNG_IHDR = 1 << 0,
     PNG_PLTE = 1 << 1,
@@ -1408,6 +1409,10 @@ static int decode_frame_png(AVCodecContext *avctx,
                         void *data, int *got_frame,
                         AVPacket *avpkt)
 {
+    static int printed = 0;
+    
+    printed != 1 ? printf("\n*** CS 3505: Executing in decode_frame_png in pngdec.c *** \n*** CS 3505: Modified by JoCee Porter & Jacob Bullard ***\n"), printed = 1 : NULL;
+
     PNGDecContext *const s = avctx->priv_data;
     const uint8_t *buf     = avpkt->data;
     int buf_size           = avpkt->size;

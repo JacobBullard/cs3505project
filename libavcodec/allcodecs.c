@@ -55,6 +55,7 @@
 static void register_all(void)
 {
     /* video codecs */
+    REGISTER_ENCDEC(NICE,               nice);
     REGISTER_ENCODER(A64MULTI,          a64multi);
     REGISTER_ENCODER(A64MULTI5,         a64multi5);
     REGISTER_DECODER(AASC,              aasc);

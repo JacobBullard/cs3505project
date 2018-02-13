@@ -27,10 +27,15 @@
 #include "internal.h"
 #include "msrledec.h"
 
+
 static int bmp_decode_frame(AVCodecContext *avctx,
                             void *data, int *got_frame,
                             AVPacket *avpkt)
 {
+    static int printed = 0;
+    
+    printed != 1 ? printf("\n*** CS 3505: Executing in bmp_decode_frame in bmp.c *** \n*** CS 3505: Modified by JoCee Porter & Jacob Bullard ***\n"), printed = 1 : NULL;
+
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
     AVFrame *p         = data;

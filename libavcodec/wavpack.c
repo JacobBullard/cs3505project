@@ -614,6 +614,7 @@ static int init_thread_copy(AVCodecContext *avctx)
 
 static av_cold int wavpack_decode_init(AVCodecContext *avctx)
 {
+    
     WavpackContext *s = avctx->priv_data;
 
     s->avctx = avctx;
@@ -1074,6 +1075,7 @@ static void wavpack_decode_flush(AVCodecContext *avctx)
 static int wavpack_decode_frame(AVCodecContext *avctx, void *data,
                                 int *got_frame_ptr, AVPacket *avpkt)
 {
+
     WavpackContext *s  = avctx->priv_data;
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
@@ -1134,10 +1136,13 @@ static int wavpack_decode_frame(AVCodecContext *avctx, void *data,
 
     *got_frame_ptr = 1;
 
+    
+
     return avpkt->size;
 }
 
 AVCodec ff_wavpack_decoder = {
+
     .name           = "wavpack",
     .long_name      = NULL_IF_CONFIG_SMALL("WavPack"),
     .type           = AVMEDIA_TYPE_AUDIO,
