@@ -67,7 +67,6 @@ static int nice_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                             const AVFrame *pict, int *got_packet)
 {
     const AVFrame * const p = pict;
-    printf(pict);
     int n_bytes_image, n_bytes_per_row, n_bytes, i, n, hsize, ret;
     const uint32_t *pal = NULL;
     uint32_t palette256[256];
@@ -82,31 +81,32 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
     switch (avctx->pix_fmt) {
-    case AV_PIX_FMT_RGB444:
-        compression = NICE_BITFIELDS;
-        pal = rgb444_masks; // abuse pal to hold color masks
-        pal_entries = 3;
-        break;
-    case AV_PIX_FMT_RGB565:
-        compression = NICE_BITFIELDS;
-        pal = rgb565_masks; // abuse pal to hold color masks
-        pal_entries = 3;
-        break;
-    case AV_PIX_FMT_RGB8:
-    case AV_PIX_FMT_BGR8:
-    case AV_PIX_FMT_RGB4_BYTE:
-    case AV_PIX_FMT_BGR4_BYTE:
-    case AV_PIX_FMT_GRAY8:
-        av_assert1(bit_count == 8);
-        avpriv_set_systematic_pal2(palette256, avctx->pix_fmt);
-        pal = palette256;
-        break;
-    case AV_PIX_FMT_PAL8:
-        pal = (uint32_t *)p->data[1];
-        break;
-    case AV_PIX_FMT_MONOBLACK:
-        pal = monoblack_pal;
-        break;
+    /* case AV_PIX_FMT_RGB444: */
+    /*     compression = NICE_BITFIELDS; */
+    /*     pal = rgb444_masks; // abuse pal to hold color masks */
+    /*     pal_entries = 3; */
+    /*     break; */
+    /* case AV_PIX_FMT_RGB565: */
+    /*     compression = NICE_BITFIELDS; */
+    /*     pal = rgb565_masks; // abuse pal to hold color masks */
+    /*     pal_entries = 3; */
+    /*     break; */
+    /* case AV_PIX_FMT_RGB8: */
+    /* case AV_PIX_FMT_BGR8: */
+    case AV_PIX_FMT_RGB4_BYTE: 
+      
+    /* case AV_PIX_FMT_BGR4_BYTE: */
+    case AV_PIX_FMT_GRAY8: 
+         av_assert1(bit_count == 8); 
+         avpriv_set_systematic_pal2(palette256, avctx->pix_fmt); 
+         pal = palette256; 
+         break; 
+    /* case AV_PIX_FMT_PAL8: */
+    /*     pal = (uint32_t *)p->data[1]; */
+    /*     break; */
+    /* case AV_PIX_FMT_MONOBLACK: */
+    /*     pal = monoblack_pal; */
+    /*     break; */
     }
     if (pal && !pal_entries) pal_entries = 1 << bit_count;
     n_bytes_per_row = ((int64_t)avctx->width * (int64_t)bit_count + 7LL) >> 3LL;
@@ -150,7 +150,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
             uint16_t *dst = (uint16_t *) buf;
             for(n = 0; n < avctx->width; n++)
 	      {
-		printf(src[n]);
                 AV_WL16(dst + n, src[n]);
 	      }
         } else {
@@ -175,10 +174,6 @@ AVCodec ff_nice_encoder = {
     .init           = nice_encode_init,
     .encode2        = nice_encode_frame,
     .pix_fmts       = (const enum AVPixelFormat[]){
-        AV_PIX_FMT_BGRA, AV_PIX_FMT_BGR24,
-        AV_PIX_FMT_RGB565, AV_PIX_FMT_RGB555, AV_PIX_FMT_RGB444,
-        AV_PIX_FMT_RGB8, AV_PIX_FMT_BGR8, AV_PIX_FMT_RGB4_BYTE, AV_PIX_FMT_BGR4_BYTE, AV_PIX_FMT_GRAY8, AV_PIX_FMT_PAL8,
-        AV_PIX_FMT_MONOBLACK,
-        AV_PIX_FMT_NONE
+    AV_PIX_FMT_RGB4_BYTE, AV_PIX_FMT_NONE
     },
 };
