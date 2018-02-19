@@ -66,6 +66,7 @@ static av_cold int nice_encode_init(AVCodecContext *avctx){
 static int nice_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                             const AVFrame *pict, int *got_packet)
 {
+  printf("START!!!");
     const AVFrame * const p = pict;
     int n_bytes_image, n_bytes_per_row, n_bytes, i, n, hsize, ret;
     const uint32_t *pal = NULL;
@@ -81,18 +82,7 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
     switch (avctx->pix_fmt) {
-    /* case AV_PIX_FMT_RGB444: */
-    /*     compression = NICE_BITFIELDS; */
-    /*     pal = rgb444_masks; // abuse pal to hold color masks */
-    /*     pal_entries = 3; */
-    /*     break; */
-    /* case AV_PIX_FMT_RGB565: */
-    /*     compression = NICE_BITFIELDS; */
-    /*     pal = rgb565_masks; // abuse pal to hold color masks */
-    /*     pal_entries = 3; */
-    /*     break; */
-    /* case AV_PIX_FMT_RGB8: */
-    /* case AV_PIX_FMT_BGR8: */
+
     case AV_PIX_FMT_RGB4_BYTE: 
       
     /* case AV_PIX_FMT_BGR4_BYTE: */
@@ -101,12 +91,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
          avpriv_set_systematic_pal2(palette256, avctx->pix_fmt); 
          pal = palette256; 
          break; 
-    /* case AV_PIX_FMT_PAL8: */
-    /*     pal = (uint32_t *)p->data[1]; */
-    /*     break; */
-    /* case AV_PIX_FMT_MONOBLACK: */
-    /*     pal = monoblack_pal; */
-    /*     break; */
+
     }
     if (pal && !pal_entries) pal_entries = 1 << bit_count;
     n_bytes_per_row = ((int64_t)avctx->width * (int64_t)bit_count + 7LL) >> 3LL;
@@ -122,8 +107,11 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if ((ret = ff_alloc_packet2(avctx, pkt, n_bytes, 0)) < 0)
         return ret;
     buf = pkt->data;
-    bytestream_put_byte(&buf, 'B');                   // BITMAPFILEHEADER.bfType
-    bytestream_put_byte(&buf, 'M');                   // do.
+    bytestream_put_byte(&buf, 'N');                   // BITMAPFILEHEADER.bfType
+    bytestream_put_byte(&buf, 'I');                   // do.
+    bytestream_put_byte(&buf, 'C');
+    bytestream_put_byte(&buf, 'E');
+    //TODO:  Does this mean 32 bits?
     bytestream_put_le32(&buf, n_bytes);               // BITMAPFILEHEADER.bfSize
     bytestream_put_le16(&buf, 0);                     // BITMAPFILEHEADER.bfReserved1
     bytestream_put_le16(&buf, 0);                     // BITMAPFILEHEADER.bfReserved2
@@ -139,27 +127,43 @@ FF_ENABLE_DEPRECATION_WARNINGS
     bytestream_put_le32(&buf, 0);                     // BITMAPINFOHEADER.biYPelsPerMeter
     bytestream_put_le32(&buf, 0);                     // BITMAPINFOHEADER.biClrUsed
     bytestream_put_le32(&buf, 0);                     // BITMAPINFOHEADER.biClrImportant
+    
+    //setting everything to white
     for (i = 0; i < pal_entries; i++)
         bytestream_put_le32(&buf, pal[i] & 0xFFFFFF);
+
+
     // BMP files are bottom-to-top so we start from the end...
     ptr = p->data[0] + (avctx->height - 1) * p->linesize[0];
     buf = pkt->data + hsize;
     for(i = 0; i < avctx->height; i++) {
+
+      //Why does bit_count == 16 even matter?
         if (bit_count == 16) {
             const uint16_t *src = (const uint16_t *) ptr;
             uint16_t *dst = (uint16_t *) buf;
             for(n = 0; n < avctx->width; n++)
 	      {
+		//TODO
+		printf("Printing data: ");
+		printf(p->data[0]);
+		//convert_to_nice_color(dst + n, src[n]);
                 AV_WL16(dst + n, src[n]);
+		
 	      }
-        } else {
+        } 
+	else {
             memcpy(buf, ptr, n_bytes_per_row);
+	    printf("else");
         }
+	printf("whats the data");
+	printf(p->data[0]);
         buf += n_bytes_per_row;
         memset(buf, 0, pad_bytes_per_row);
         buf += pad_bytes_per_row;
         ptr -= p->linesize[0]; // ... and go back
     }
+    printf("doesnt' go through loop");
 
     pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;
@@ -177,3 +181,11 @@ AVCodec ff_nice_encoder = {
     AV_PIX_FMT_RGB4_BYTE, AV_PIX_FMT_NONE
     },
 };
+
+
+//convert_to_nice_color()
+//{
+  //we are given 4 bytes
+  //get first byte, convert to decimal, divide by three, then get correct color from table.
+  
+//}
