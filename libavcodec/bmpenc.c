@@ -66,6 +66,7 @@ static av_cold int bmp_encode_init(AVCodecContext *avctx){
 static int bmp_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                             const AVFrame *pict, int *got_packet)
 {
+    printf("BMP ENCODER");
     const AVFrame * const p = pict;
     int n_bytes_image, n_bytes_per_row, n_bytes, i, n, hsize, ret;
     const uint32_t *pal = NULL;

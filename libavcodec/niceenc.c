@@ -32,33 +32,12 @@ static const uint32_t rgb565_masks[]  = { 0xF800, 0x07E0, 0x001F };
 static const uint32_t rgb444_masks[]  = { 0x0F00, 0x00F0, 0x000F };
 
 static av_cold int nice_encode_init(AVCodecContext *avctx){
-    switch (avctx->pix_fmt) {
-    case AV_PIX_FMT_BGRA:
-        avctx->bits_per_coded_sample = 32;
-        break;
-    case AV_PIX_FMT_BGR24:
-        avctx->bits_per_coded_sample = 24;
-        break;
-    case AV_PIX_FMT_RGB555:
-    case AV_PIX_FMT_RGB565:
-    case AV_PIX_FMT_RGB444:
-        avctx->bits_per_coded_sample = 16;
-        break;
-    case AV_PIX_FMT_RGB8:
-    case AV_PIX_FMT_BGR8:
-    case AV_PIX_FMT_RGB4_BYTE:
-    case AV_PIX_FMT_BGR4_BYTE:
-    case AV_PIX_FMT_GRAY8:
-    case AV_PIX_FMT_PAL8:
-        avctx->bits_per_coded_sample = 8;
-        break;
-    case AV_PIX_FMT_MONOBLACK:
-        avctx->bits_per_coded_sample = 1;
-        break;
-    default:
+  if(avctx->pix_fmt == AV_PIX_FMT_RGB8)
+    avctx->bits_per_coded_sample = 8;
+  else {
         av_log(avctx, AV_LOG_INFO, "unsupported pixel format\n");
         return AVERROR(EINVAL);
-    }
+   }
 
     return 0;
 }
@@ -66,7 +45,6 @@ static av_cold int nice_encode_init(AVCodecContext *avctx){
 static int nice_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                             const AVFrame *pict, int *got_packet)
 {
-  printf("START!!!");
     const AVFrame * const p = pict;
     int n_bytes_image, n_bytes_per_row, n_bytes, i, n, hsize, ret;
     const uint32_t *pal = NULL;
@@ -77,21 +55,21 @@ static int nice_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
 #if FF_API_CODED_FRAME
 FF_DISABLE_DEPRECATION_WARNINGS
-    avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
+  avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
     avctx->coded_frame->key_frame = 1;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
+    //avctx->pix_fmt = AV_PIX_BGR24;
     switch (avctx->pix_fmt) {
-
-    case AV_PIX_FMT_RGB4_BYTE: 
-      
-    /* case AV_PIX_FMT_BGR4_BYTE: */
-    case AV_PIX_FMT_GRAY8: 
+    case AV_PIX_FMT_RGB8:
+    case AV_PIX_FMT_BGR8:
+    case AV_PIX_FMT_RGB4_BYTE:
+    case AV_PIX_FMT_BGR4_BYTE:
+     case AV_PIX_FMT_GRAY8: 
          av_assert1(bit_count == 8); 
          avpriv_set_systematic_pal2(palette256, avctx->pix_fmt); 
          pal = palette256; 
          break; 
-
     }
     if (pal && !pal_entries) pal_entries = 1 << bit_count;
     n_bytes_per_row = ((int64_t)avctx->width * (int64_t)bit_count + 7LL) >> 3LL;
@@ -111,7 +89,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
     bytestream_put_byte(&buf, 'I');                   // do.
     bytestream_put_byte(&buf, 'C');
     bytestream_put_byte(&buf, 'E');
-    //TODO:  Does this mean 32 bits?
     bytestream_put_le32(&buf, n_bytes);               // BITMAPFILEHEADER.bfSize
     bytestream_put_le16(&buf, 0);                     // BITMAPFILEHEADER.bfReserved1
     bytestream_put_le16(&buf, 0);                     // BITMAPFILEHEADER.bfReserved2
@@ -128,7 +105,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
     bytestream_put_le32(&buf, 0);                     // BITMAPINFOHEADER.biClrUsed
     bytestream_put_le32(&buf, 0);                     // BITMAPINFOHEADER.biClrImportant
     
-    //setting everything to white
     for (i = 0; i < pal_entries; i++)
         bytestream_put_le32(&buf, pal[i] & 0xFFFFFF);
 
@@ -136,6 +112,11 @@ FF_ENABLE_DEPRECATION_WARNINGS
     // BMP files are bottom-to-top so we start from the end...
     ptr = p->data[0] + (avctx->height - 1) * p->linesize[0];
     buf = pkt->data + hsize;
+    printf("Number of bytes per row: %d", n_bytes_per_row);
+    printf("\n");
+    
+    
+
     for(i = 0; i < avctx->height; i++) {
 
       //Why does bit_count == 16 even matter?
@@ -144,26 +125,29 @@ FF_ENABLE_DEPRECATION_WARNINGS
             uint16_t *dst = (uint16_t *) buf;
             for(n = 0; n < avctx->width; n++)
 	      {
-		//TODO
-		printf("Printing data: ");
-		printf(p->data[0]);
-		//convert_to_nice_color(dst + n, src[n]);
                 AV_WL16(dst + n, src[n]);
 		
 	      }
         } 
 	else {
             memcpy(buf, ptr, n_bytes_per_row);
-	    printf("else");
-        }
-	printf("whats the data");
-	printf(p->data[0]);
+       } 
+       
+	printf("Height: %d", i);
+	printf("\n");
+	for( int i = 0 ; i < n_bytes_per_row; i++)
+      {
+	unsigned char byte = *((unsigned char *)&buf + i);
+	unsigned char sourcebyte = *((unsigned char *)&ptr + i);
+	printf("Buffer Byte %d = %u\n", i , (unsigned)byte);
+	printf("Source Byte %d = %u\n", i , (unsigned)sourcebyte);
+      }
+
         buf += n_bytes_per_row;
         memset(buf, 0, pad_bytes_per_row);
         buf += pad_bytes_per_row;
         ptr -= p->linesize[0]; // ... and go back
     }
-    printf("doesnt' go through loop");
 
     pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;
@@ -178,14 +162,7 @@ AVCodec ff_nice_encoder = {
     .init           = nice_encode_init,
     .encode2        = nice_encode_frame,
     .pix_fmts       = (const enum AVPixelFormat[]){
-    AV_PIX_FMT_RGB4_BYTE, AV_PIX_FMT_NONE
+         AV_PIX_FMT_RGB8,
+        AV_PIX_FMT_NONE
     },
 };
-
-
-//convert_to_nice_color()
-//{
-  //we are given 4 bytes
-  //get first byte, convert to decimal, divide by three, then get correct color from table.
-  
-//}

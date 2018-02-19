@@ -57,8 +57,10 @@ static int nice_decode_frame(AVCodecContext *avctx,
         return AVERROR_INVALIDDATA;
     }
 
-    if (bytestream_get_byte(&buf) != 'B' ||
-        bytestream_get_byte(&buf) != 'M') {
+    if (bytestream_get_byte(&buf) != 'N' ||
+        bytestream_get_byte(&buf) != 'I' ||
+        bytestream_get_byte(&buf) != 'C' ||
+        bytestream_get_byte(&buf) != 'E') {
         av_log(avctx, AV_LOG_ERROR, "bad magic number\n");
         return AVERROR_INVALIDDATA;
     }
@@ -112,7 +114,7 @@ static int nice_decode_frame(AVCodecContext *avctx,
 
     /* planes */
     if (bytestream_get_le16(&buf) != 1) {
-        av_log(avctx, AV_LOG_ERROR, "invalid BMP header\n");
+        av_log(avctx, AV_LOG_ERROR, "invalid NICE header\n");
         return AVERROR_INVALIDDATA;
     }
 
@@ -123,9 +125,10 @@ static int nice_decode_frame(AVCodecContext *avctx,
     else
         comp = NICE_RGB;
 
+    // change these
     if (comp != NICE_RGB && comp != NICE_BITFIELDS && comp != NICE_RLE4 &&
         comp != NICE_RLE8) {
-        av_log(avctx, AV_LOG_ERROR, "BMP coding %d not supported\n", comp);
+        av_log(avctx, AV_LOG_ERROR, "NICE coding %d not supported\n", comp);
         return AVERROR_INVALIDDATA;
     }
 
