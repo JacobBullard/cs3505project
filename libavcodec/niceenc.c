@@ -1,5 +1,5 @@
 /*
- * BMP image format encoder
+ * NICE image format encoder
  * Copyright (c) 2006, 2007 Michel Bardiaux
  * Copyright (c) 2009 Daniel Verkamp <daniel at drv.nu>
  *
@@ -59,18 +59,19 @@ FF_DISABLE_DEPRECATION_WARNINGS
     avctx->coded_frame->key_frame = 1;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
-    //avctx->pix_fmt = AV_PIX_BGR24;
-    switch (avctx->pix_fmt) {
-    case AV_PIX_FMT_RGB8:
-    case AV_PIX_FMT_BGR8:
-    case AV_PIX_FMT_RGB4_BYTE:
-    case AV_PIX_FMT_BGR4_BYTE:
-     case AV_PIX_FMT_GRAY8: 
-         av_assert1(bit_count == 8); 
-         avpriv_set_systematic_pal2(palette256, avctx->pix_fmt); 
-         pal = palette256; 
-         break; 
-    }
+    avctx->pix_fmt = AV_PIX_RGB8;
+ bit_count = 8;
+//switch (avctx->pix_fmt) {
+//   case AV_PIX_FMT_RGB8:
+//  case AV_PIX_FMT_BGR8:
+//  case AV_PIX_FMT_RGB4_BYTE:
+//  case AV_PIX_FMT_BGR4_BYTE:
+//   case AV_PIX_FMT_GRAY8: 
+//av_assert1(bit_count == 8); 
+       //         avpriv_set_systematic_pal2(palette256, avctx->pix_fmt); 
+       // pal = palette256; 
+//       break; 
+//  }
     if (pal && !pal_entries) pal_entries = 1 << bit_count;
     n_bytes_per_row = ((int64_t)avctx->width * (int64_t)bit_count + 7LL) >> 3LL;
     pad_bytes_per_row = (4 - n_bytes_per_row) & 3;
@@ -78,40 +79,43 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     // STRUCTURE.field refer to the MSVC documentation for BITMAPFILEHEADER
     // and related pages.
-#define SIZE_BITMAPFILEHEADER 14
-#define SIZE_BITMAPINFOHEADER 40
+    //#define SIZE_BITMAPFILEHEADER 14
+    //#define SIZE_BITMAPINFOHEADER 40
     //JoCee added '+2' to the header size to account for the extra letter added in the header.
-    header_size = (SIZE_BITMAPFILEHEADER + SIZE_BITMAPINFOHEADER + (pal_entries << 2));
+    //header_size = (SIZE_BITMAPFILEHEADER + SIZE_BITMAPINFOHEADER + (pal_entries << 2));
     printf("before adding 2: %d\n", header_size);
-    header_size = header_size + 2;
+    //header_size = header_size + 2;
+    header_size = 12;
     printf("after adding 2: %d\n", header_size);
     n_bytes = n_bytes_image + header_size;
+
     if ((ret = ff_alloc_packet2(avctx, pkt, n_bytes, 0)) < 0)
        return ret;
+
     buf = pkt->data;
     bytestream_put_byte(&buf, 'N');                   // BITMAPFILEHEADER.bfType
     bytestream_put_byte(&buf, 'I');                   // do.
     bytestream_put_byte(&buf, 'C');
     bytestream_put_byte(&buf, 'E');
-    bytestream_put_le32(&buf, n_bytes);               // BITMAPFILEHEADER.bfSize
-    bytestream_put_le16(&buf, 0);                     // BITMAPFILEHEADER.bfReserved1
-    bytestream_put_le16(&buf, 0);                     // BITMAPFILEHEADER.bfReserved2
-    bytestream_put_le32(&buf, header_size);                 // BITMAPFILEHEADER.bfOffBits
-    bytestream_put_le32(&buf, SIZE_BITMAPINFOHEADER); // BITMAPINFOHEADER.biSize
+    //bytestream_put_le32(&buf, n_bytes);               // BITMAPFILEHEADER.bfSize
+    //bytestream_put_le16(&buf, 0);                     // BITMAPFILEHEADER.bfReserved1
+    //bytestream_put_le16(&buf, 0);                     // BITMAPFILEHEADER.bfReserved2
+    //bytestream_put_le32(&buf, header_size);                 // BITMAPFILEHEADER.bfOffBits
+    //bytestream_put_le32(&buf, SIZE_BITMAPINFOHEADER); // BITMAPINFOHEADER.biSize
     bytestream_put_le32(&buf, avctx->width);          // BITMAPINFOHEADER.biWidth
     bytestream_put_le32(&buf, avctx->height);         // BITMAPINFOHEADER.biHeight
-    bytestream_put_le16(&buf, 1);                     // BITMAPINFOHEADER.biPlanes
-    bytestream_put_le16(&buf, bit_count);             // BITMAPINFOHEADER.biBitCount
-    bytestream_put_le32(&buf, compression);           // BITMAPINFOHEADER.biCompression
-    bytestream_put_le32(&buf, n_bytes_image);         // BITMAPINFOHEADER.biSizeImage
-    bytestream_put_le32(&buf, 0);                     // BITMAPINFOHEADER.biXPelsPerMeter
-    bytestream_put_le32(&buf, 0);                     // BITMAPINFOHEADER.biYPelsPerMeter
-    bytestream_put_le32(&buf, 0);                     // BITMAPINFOHEADER.biClrUsed
-    bytestream_put_le32(&buf, 0);                     // BITMAPINFOHEADER.biClrImportant
+    //bytestream_put_le16(&buf, 1);                     // BITMAPINFOHEADER.biPlanes
+    //bytestream_put_le16(&buf, bit_count);             // BITMAPINFOHEADER.biBitCount
+    //bytestream_put_le32(&buf, compression);           // BITMAPINFOHEADER.biCompression
+    //bytestream_put_le32(&buf, n_bytes_image);         // BITMAPINFOHEADER.biSizeImage
+    //bytestream_put_le32(&buf, 0);                     // BITMAPINFOHEADER.biXPelsPerMeter
+    //bytestream_put_le32(&buf, 0);                     // BITMAPINFOHEADER.biYPelsPerMeter
+    //bytestream_put_le32(&buf, 0);                     // BITMAPINFOHEADER.biClrUsed
+    //bytestream_put_le32(&buf, 0);                     // BITMAPINFOHEADER.biClrImportant
     
     //here is where it is inserting the pallette table
-    for (i = 0; i < pal_entries; i++)
-        bytestream_put_le32(&buf, pal[i] & 0xFFFFFF);
+    //for (i = 0; i < pal_entries; i++)
+    //    bytestream_put_le32(&buf, pal[i] & 0xFFFFFF);
 
 
     // BMP files are bottom-to-top so we start from the end...
@@ -125,28 +129,28 @@ FF_ENABLE_DEPRECATION_WARNINGS
     for(i = 0; i < avctx->height; i++) {
 
       //Why does bit_count == 16 even matter?
-        if (bit_count == 16) {
-            const uint16_t *src = (const uint16_t *) ptr;
-            uint16_t *dst = (uint16_t *) buf;
-            for(n = 0; n < avctx->width; n++)
-	      {
-                AV_WL16(dst + n, src[n]);
+       // if (bit_count == 16) {
+       //     const uint16_t *src = (const uint16_t *) ptr;
+      //    uint16_t *dst = (uint16_t *) buf;
+      //    for(n = 0; n < avctx->width; n++)
+      //      {
+      //        AV_WL16(dst + n, src[n]);
 		
-	      }
-        } 
-	else {
+      //      }
+      // } 
+      //else {
             memcpy(buf, ptr, n_bytes_per_row);
        } 
        
 	//printf("Height: %d", i);
 	//printf("\n");
-	for( int i = 0 ; i < n_bytes_per_row; i++)
-      {
-	unsigned char byte = *((unsigned char *)&buf + i);
-	unsigned char sourcebyte = *((unsigned char *)&ptr + i);
+	//for( int i = 0 ; i < n_bytes_per_row; i++)
+	  //{
+	//unsigned char byte = *((unsigned char *)&buf + i);
+	//unsigned char sourcebyte = *((unsigned char *)&ptr + i);
 	//printf("Buffer Byte %d = %u\n", i , (unsigned)byte);
 	//printf("Source Byte %d = %u\n", i , (unsigned)sourcebyte);
-      }
+    //}
 
         buf += n_bytes_per_row;
 	//TODO:  Take out this buffer!  Find out the pad bytes per row size.
