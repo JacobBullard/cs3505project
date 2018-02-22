@@ -46,7 +46,7 @@ static int nice_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                             const AVFrame *pict, int *got_packet)
 {
     const AVFrame * const p = pict;
-    int n_bytes_image, n_bytes_per_row, n_bytes, i, n, hsize, ret;
+    int n_bytes_image, n_bytes_per_row, n_bytes, i, n, header_size, ret;
     const uint32_t *pal = NULL;
     uint32_t palette256[256];
     int pad_bytes_per_row, pal_entries = 0, compression = NICE_RGB;
@@ -80,10 +80,14 @@ FF_ENABLE_DEPRECATION_WARNINGS
     // and related pages.
 #define SIZE_BITMAPFILEHEADER 14
 #define SIZE_BITMAPINFOHEADER 40
-    hsize = SIZE_BITMAPFILEHEADER + SIZE_BITMAPINFOHEADER + (pal_entries << 2);
-    n_bytes = n_bytes_image + hsize;
+    //JoCee added '+2' to the header size to account for the extra letter added in the header.
+    header_size = (SIZE_BITMAPFILEHEADER + SIZE_BITMAPINFOHEADER + (pal_entries << 2));
+    printf("before adding 2: %d\n", header_size);
+    header_size = header_size + 2;
+    printf("after adding 2: %d\n", header_size);
+    n_bytes = n_bytes_image + header_size;
     if ((ret = ff_alloc_packet2(avctx, pkt, n_bytes, 0)) < 0)
-        return ret;
+       return ret;
     buf = pkt->data;
     bytestream_put_byte(&buf, 'N');                   // BITMAPFILEHEADER.bfType
     bytestream_put_byte(&buf, 'I');                   // do.
@@ -92,7 +96,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     bytestream_put_le32(&buf, n_bytes);               // BITMAPFILEHEADER.bfSize
     bytestream_put_le16(&buf, 0);                     // BITMAPFILEHEADER.bfReserved1
     bytestream_put_le16(&buf, 0);                     // BITMAPFILEHEADER.bfReserved2
-    bytestream_put_le32(&buf, hsize);                 // BITMAPFILEHEADER.bfOffBits
+    bytestream_put_le32(&buf, header_size);                 // BITMAPFILEHEADER.bfOffBits
     bytestream_put_le32(&buf, SIZE_BITMAPINFOHEADER); // BITMAPINFOHEADER.biSize
     bytestream_put_le32(&buf, avctx->width);          // BITMAPINFOHEADER.biWidth
     bytestream_put_le32(&buf, avctx->height);         // BITMAPINFOHEADER.biHeight
@@ -105,15 +109,16 @@ FF_ENABLE_DEPRECATION_WARNINGS
     bytestream_put_le32(&buf, 0);                     // BITMAPINFOHEADER.biClrUsed
     bytestream_put_le32(&buf, 0);                     // BITMAPINFOHEADER.biClrImportant
     
+    //here is where it is inserting the pallette table
     for (i = 0; i < pal_entries; i++)
         bytestream_put_le32(&buf, pal[i] & 0xFFFFFF);
 
 
     // BMP files are bottom-to-top so we start from the end...
     ptr = p->data[0] + (avctx->height - 1) * p->linesize[0];
-    buf = pkt->data + hsize;
-    printf("Number of bytes per row: %d", n_bytes_per_row);
-    printf("\n");
+    buf = pkt->data + header_size;
+    //printf("Number of bytes per row: %d", n_bytes_per_row);
+    //printf("\n");
     
     
 
@@ -133,17 +138,18 @@ FF_ENABLE_DEPRECATION_WARNINGS
             memcpy(buf, ptr, n_bytes_per_row);
        } 
        
-	printf("Height: %d", i);
-	printf("\n");
+	//printf("Height: %d", i);
+	//printf("\n");
 	for( int i = 0 ; i < n_bytes_per_row; i++)
       {
 	unsigned char byte = *((unsigned char *)&buf + i);
 	unsigned char sourcebyte = *((unsigned char *)&ptr + i);
-	printf("Buffer Byte %d = %u\n", i , (unsigned)byte);
-	printf("Source Byte %d = %u\n", i , (unsigned)sourcebyte);
+	//printf("Buffer Byte %d = %u\n", i , (unsigned)byte);
+	//printf("Source Byte %d = %u\n", i , (unsigned)sourcebyte);
       }
 
         buf += n_bytes_per_row;
+	//TODO:  Take out this buffer!  Find out the pad bytes per row size.
         memset(buf, 0, pad_bytes_per_row);
         buf += pad_bytes_per_row;
         ptr -= p->linesize[0]; // ... and go back

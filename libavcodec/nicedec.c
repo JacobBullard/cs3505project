@@ -59,13 +59,14 @@ static int nice_decode_frame(AVCodecContext *avctx,
 
     if (bytestream_get_byte(&buf) != 'N' ||
         bytestream_get_byte(&buf) != 'I' ||
-        bytestream_get_byte(&buf) != 'C' ||
-        bytestream_get_byte(&buf) != 'E') {
+        bytestream_get_byte(&buf) != 'C' || 
+        bytestream_get_byte(&buf) != 'E' ) {
         av_log(avctx, AV_LOG_ERROR, "bad magic number\n");
         return AVERROR_INVALIDDATA;
     }
 
-    fsize = bytestream_get_le32(&buf);
+    fsize = bytestream_get_le32(&buf); //n_bytes
+    printf("Fsize %u \n", fsize);
     if (buf_size < fsize) {
         av_log(avctx, AV_LOG_ERROR, "not enough data (%d < %u), trying to decode anyway\n",
                buf_size, fsize);
@@ -77,12 +78,15 @@ static int nice_decode_frame(AVCodecContext *avctx,
 
     hsize  = bytestream_get_le32(&buf); /* header size */
     ihsize = bytestream_get_le32(&buf); /* more header size */
+    printf("Hsize %u \n", hsize);
+    printf("Isize %u \n", ihsize);
     if (ihsize + 14LL > hsize) {
         av_log(avctx, AV_LOG_ERROR, "invalid header size %u\n", hsize);
         return AVERROR_INVALIDDATA;
     }
 
     /* sometimes file size is set to some headers size, set a real size in that case */
+    //Do we even need this?
     if (fsize == 14 || fsize == ihsize + 14)
         fsize = buf_size - 2;
 
@@ -110,7 +114,7 @@ static int nice_decode_frame(AVCodecContext *avctx,
         avpriv_report_missing_feature(avctx, "Information header size %u",
                                       ihsize);
         return AVERROR_PATCHWELCOME;
-    }
+	}
 
     /* planes */
     if (bytestream_get_le16(&buf) != 1) {
@@ -118,12 +122,13 @@ static int nice_decode_frame(AVCodecContext *avctx,
         return AVERROR_INVALIDDATA;
     }
 
-    depth = bytestream_get_le16(&buf);
-
-    if (ihsize >= 40)
-        comp = bytestream_get_le32(&buf);
-    else
-        comp = NICE_RGB;
+    depth = bytestream_get_le16(&buf);//Called bit_count
+    
+    //it should be NICE_RGB anyways 
+    //if (ihsize >= 40)
+    comp = bytestream_get_le32(&buf); //compression
+    //else
+    //    comp = NICE_RGB;
 
     // change these
     if (comp != NICE_RGB && comp != NICE_BITFIELDS && comp != NICE_RLE4 &&
@@ -132,14 +137,15 @@ static int nice_decode_frame(AVCodecContext *avctx,
         return AVERROR_INVALIDDATA;
     }
 
-    if (comp == NICE_BITFIELDS) {
+    //COMP should always be NICE_RGB
+    /*if (comp == NICE_BITFIELDS) {
         buf += 20;
         rgb[0] = bytestream_get_le32(&buf);
         rgb[1] = bytestream_get_le32(&buf);
         rgb[2] = bytestream_get_le32(&buf);
         if (ihsize > 40)
         alpha = bytestream_get_le32(&buf);
-    }
+	}*/
 
     ret = ff_set_dimensions(avctx, width, height > 0 ? height : -(unsigned)height);
     if (ret < 0) {
