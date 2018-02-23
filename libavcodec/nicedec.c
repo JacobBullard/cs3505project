@@ -108,7 +108,7 @@ static int nice_decode_frame(AVCodecContext *avctx,
     printf("n %u \n", n);
     //n = width;
     int counter = 0;
- for (i = 0; i < avctx->height; i++) 
+ for (i = 0; i < height; i++) 
    {
      printf("count %u \n", counter);
         memcpy(ptr, buf, n);
