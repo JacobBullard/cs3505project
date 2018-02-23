@@ -313,6 +313,7 @@ static int bmp_decode_frame(AVCodecContext *avctx,
         case 8:
         case 24:
         case 32:
+	  printf("LINE SIZE &u \n \n", linesize);
             for (i = 0; i < avctx->height; i++) {
                 memcpy(ptr, buf, n);
                 buf += n;
